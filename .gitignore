@@ -1,0 +1,23 @@
+# Python
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.pyz
+*.pyw
+*.pyc
+*.pyo
+*.pyd
+*.pyz
+*.pyw
+
+# PyInstaller
+/dist/
+/build/
+/*.spec
+
+/meta
+/others
+
+*.jsonl
+
