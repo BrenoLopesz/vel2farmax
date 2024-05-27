@@ -285,8 +285,12 @@ class ModernGUI(QWidget):
         self.deliveries_tracker.start()
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    app.setStyleSheet(loadCSS())
-    window = ModernGUI()
-    window.show()
-    sys.exit(app.exec_())
+    try:
+        app = QApplication(sys.argv)
+        app.setStyleSheet(loadCSS())
+        window = ModernGUI()
+        window.show()
+        sys.exit(app.exec_())
+    except Exception as e:
+        errorLogger = Logger("errorlog", "resources/errors.log")
+        errorLogger.critical(e)
