@@ -39,14 +39,22 @@ class IntegrationWorker(QThread):
 
         changes = self.farmax_conn.fetchChangesAfterTime(search_after_time)
 
-        asyncio.run(self.handleInsertChanges(changes))
-        asyncio.run(self.handleDeleteChanges(changes))
-        asyncio.run(self.handleRouteStarts())
-        asyncio.run(self.handleRouteEnds())
+        asyncio.run(self.runHandlers(changes))
 
         self.sqlite.close_connection()
         self.sqlite = None
         self.end.emit()
+
+    async def runHandlers(self, changes):
+        current_date = datetime.now()
+        day_before = current_date - timedelta(hours=24)
+        velide_deliveries = await self.velide.getDeliveries(day_before.timestamp(), current_date.timestamp())
+        
+        await self.handleInsertChanges(changes)
+        await self.handleDeleteChanges(changes)
+        await self.handleRouteStarts(velide_deliveries)
+        await self.handleRouteEnds(velide_deliveries)
+        await self.handleDeletionsInVelide(velide_deliveries)
 
     async def handleInsertChanges(self, changes):
         insert_changes = tuple(change for change in changes if change[2] == "INSERT")
@@ -90,11 +98,8 @@ class IntegrationWorker(QThread):
             self.sqlite.delete_where("Deliveries", [("id", vel_delivery["id"])])
             self.logger.info(f"Entrega deletada: {vel_delivery["location"]["properties"]["name"] if vel_delivery["location"]["properties"]["name"] is not None else "Endereço Indefinido"}")
 
-    async def handleRouteStarts(self):
-        current_date = datetime.now()
-        day_before = current_date - timedelta(hours=24)
-        deliveries = await self.velide.getDeliveries(day_before.timestamp(), current_date.timestamp())
-        deliveries_in_route = [delivery for delivery in deliveries 
+    async def handleRouteStarts(self, velide_deliveries):
+        deliveries_in_route = [delivery for delivery in velide_deliveries 
                                if "route" in delivery 
                                and delivery["route"] is not None
                                and (
@@ -126,19 +131,16 @@ class IntegrationWorker(QThread):
                 if deliveryman[2] not in [new_deliveryman_in_route[0] for new_deliveryman_in_route in new_deliverymen_in_route]:
                     new_deliverymen_in_route.append((deliveryman[2], (delivery_from_velide,)))
                 else:
-                    for i, (name, deliveries) in enumerate(new_deliverymen_in_route):
+                    for i, (name, velide_deliveries) in enumerate(new_deliverymen_in_route):
                         if name == deliveryman[2]:
-                            new_deliverymen_in_route[i] = (name, (*deliveries, delivery_from_velide))
+                            new_deliverymen_in_route[i] = (name, (*velide_deliveries, delivery_from_velide))
         
         for deliveryman in new_deliverymen_in_route:
             deliveries_names = [delivery["location"]["properties"]["name"] if delivery["location"]["properties"]["name"] is not None else "Endereço Indefinido" for delivery in deliveryman[1]]
             self.logger.info(f"Rota iniciada para {deliveryman[0]} contendo as entregas: {", ".join(deliveries_names)}")
 
-    async def handleRouteEnds(self):
-        current_date = datetime.now()
-        day_before = current_date - timedelta(hours=24)
-        deliveries = await self.velide.getDeliveries(day_before.timestamp(), current_date.timestamp())
-        deliveries_done = [delivery for delivery in deliveries 
+    async def handleRouteEnds(self, velide_deliveries):
+        deliveries_done = [delivery for delivery in velide_deliveries 
                                if "endedAt" in delivery 
                                and delivery["endedAt"] is not None]
         
@@ -165,3 +167,24 @@ class IntegrationWorker(QThread):
 
         for deliveryman in new_route_ended:
             self.logger.info(f"O entregador {deliveryman} retornou para loja.")
+
+    async def handleDeletionsInVelide(self, velide_deliveries):
+        saved_deliveries = self.sqlite.get_data_where_multi("Deliveries", (("done", 0),))
+
+        def isDeliveryInVelide(saved_delivery):
+            saved_delivery_id = saved_delivery[0]
+            return any(velide_delivery["id"] == saved_delivery_id for velide_delivery in velide_deliveries)
+
+        # Since it can take some while to delivery be added to Velide, check if it has passed a minute or more yet.
+        def isOlderThanOneMinute(saved_delivery):
+            saved_delivery_timestamp = float(saved_delivery[4])
+            return datetime.now() - datetime.fromtimestamp(saved_delivery_timestamp) > timedelta(minutes=1)
+
+        removed_deliveries = (
+            saved_delivery for saved_delivery in saved_deliveries
+            if not isDeliveryInVelide(saved_delivery, velide_deliveries) and isOlderThanOneMinute(saved_delivery)
+        )
+
+        for removed_delivery in removed_deliveries:
+            self.sqlite.delete_where("Deliveries", (("id", removed_delivery[0]),))
+            self.logger.info(f"Removendo entrega deletada do Velide (Venda {removed_delivery[1]}).")
