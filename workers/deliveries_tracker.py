@@ -5,13 +5,17 @@ from utils.sqlite_manager import SQLiteManager
 from utils.velide import Velide
 from datetime import datetime, timedelta
 import asyncio
+import sys
+import os
 
-DB_NAME = "vel2farmax.db"
+if getattr(sys, 'frozen', False):
+    BUNDLE_DIR = os.path.dirname(sys.executable)
+else:
+    BUNDLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+
+DB_NAME = os.path.join(BUNDLE_DIR, "resources", "vel2farmax.db")
 
 class DeliveriesTracker(QThread):
-    """
-    Used to update dashboard table with deliveries status.
-    """
     on_update = pyqtSignal(list)
     end = pyqtSignal()
 

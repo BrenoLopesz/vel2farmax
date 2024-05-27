@@ -47,19 +47,16 @@ class Farmax:
 
             # Create a trigger to update sequence, if not exists
             if not self.checkIfTriggerExists(self.INCREMENT_TRIGGER_NAME): 
-                cur.execute(f"""SET TERM ^;
-                            CREATE TRIGGER {self.INCREMENT_TRIGGER_NAME} FOR {self.LOG_TABLE_NAME}
+                cur.execute(f"""CREATE TRIGGER {self.INCREMENT_TRIGGER_NAME} FOR {self.LOG_TABLE_NAME}
                             ACTIVE BEFORE INSERT POSITION 0
                             AS
                             BEGIN
                                 NEW.Id = next value for {self.SEQUENCE_NAME};
-                            END^
-                            SET TERM ;^""")
+                            END""")
             
             # Create trigger for 'ENTREGAS', and insert to log, if not exists
             if not self.checkIfTriggerExists(self.ADD_DELIVERY_TRIGGER_NAME): 
-                cur.execute(f"""SET TERM ^;
-                            CREATE TRIGGER {self.ADD_DELIVERY_TRIGGER_NAME}
+                cur.execute(f"""CREATE TRIGGER {self.ADD_DELIVERY_TRIGGER_NAME}
                                 FOR ENTREGAS
                                 ACTIVE AFTER INSERT OR UPDATE OR DELETE
                             AS
@@ -73,10 +70,9 @@ class Farmax:
                                 ELSE IF (DELETING) THEN
                                     INSERT INTO {self.LOG_TABLE_NAME} (CD_VENDA, Action, LogDate)
                                     VALUES (OLD.CD_VENDA, 'DELETE', CURRENT_TIMESTAMP);
-                                END
-                            ^
-                            SET TERM ;^""")
+                            END""")
                 
+            self.farmax_conn.commit()
             cur.close()
 
         except Exception as e:
@@ -174,6 +170,7 @@ class Farmax:
     def updateDeliveryAsDone(self, cd_venda, ended_at):
         cursor = self.farmax_conn.cursor()
         cursor.execute("UPDATE ENTREGAS SET HORA_CHEGADA = ?, STATUS = 'V' WHERE CD_VENDA = ?", (ended_at, float(cd_venda)))
+        cursor.execute("UPDATE VENDAS SET CONCLUIDO = 'S', STATUS = 'V', HORAFINAL = ? WHERE CD_VENDA = ?", (ended_at, float(cd_venda)))
         self.farmax_conn.commit()
     
     def checkIfSequenceExists(self, sequence_name):

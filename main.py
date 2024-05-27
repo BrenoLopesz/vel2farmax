@@ -1,19 +1,13 @@
 import sys
-from PyQt5 import QtTest
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QComboBox, QScrollArea, QTableWidget, QTableWidgetItem, QSystemTrayIcon, QMenu, QAction
 from PyQt5.QtGui import QIcon
 from PyQt5.QtGui import QFont, QFontDatabase
 from PyQt5.QtCore import Qt, QTimer
-import requests
 from screeninfo import get_monitors
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import os
-import json
-import base64
-import fdb
 import asyncio
-import httpx
 from screens.load_fonts import loadFonts
 from screens.initial_screen import InitialScreen
 from screens.device_code_screen import DeviceCodeScreen
@@ -23,8 +17,6 @@ from screens.searching_deliveries_screen import SearchingDeliveriesScreen
 from screens.dashboard_screen import DashboardScreen 
 from utils.device_code import DeviceCode, DeviceCodeDict
 from utils.access_token import AccessToken, storeTokenAtFile
-from utils.farmax import Farmax
-from utils.velide import Velide
 from utils.logger import Logger
 from utils.sqlite_manager import SQLiteManager 
 from workers.authorization_flow import AuthorizationFlow
@@ -47,15 +39,11 @@ AUDIENCE = "https://velide.com.br/"
 VELIDE_SERVER="https://srv436689.hstgr.cloud/"
 
 if getattr(sys, 'frozen', False):
-    BUNDLE_DIR = getattr(sys, "_MEIPASS", os.path.abspath(os.path.dirname(__file__)))
+    BUNDLE_DIR = os.path.dirname(sys.executable)
 else:
-    BUNDLE_DIR = os.path.join(os.path.dirname(os.path.realpath( __file__ )))
+    BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Load environment variables from .env file
-if(os.path.isfile(".env")):
-    load_dotenv()
-else:
-    load_dotenv(os.path.join(BUNDLE_DIR, "resources", ".env"))
+load_dotenv(os.path.join("resources", ".env"))
 
 host = os.getenv('HOST')
 database = os.getenv('DATABASE')

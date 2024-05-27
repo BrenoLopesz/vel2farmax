@@ -6,9 +6,9 @@ import sys
 import os
 
 if getattr(sys, 'frozen', False):
-    BUNDLE_DIR = getattr(sys, "_MEIPASS", os.path.abspath(os.path.dirname(__file__)))
+    BUNDLE_DIR = os.path.dirname(sys.executable)
 else:
-    BUNDLE_DIR = os.path.join(os.path.dirname(os.path.realpath( __file__ )), "..")
+    BUNDLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
 def encode_base64(json):
     # Convert the refresh token string to bytes

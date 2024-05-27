@@ -5,8 +5,15 @@ from utils.velide import Velide
 from utils.logger import Logger
 import asyncio
 from datetime import datetime, timedelta
+import sys
+import os
 
-DB_NAME = "vel2farmax.db"
+if getattr(sys, 'frozen', False):
+    BUNDLE_DIR = os.path.dirname(sys.executable)
+else:
+    BUNDLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+
+DB_NAME = os.path.join(BUNDLE_DIR, "resources", "vel2farmax.db")
 
 class IntegrationWorker(QThread):
     end = pyqtSignal()
@@ -64,6 +71,7 @@ class IntegrationWorker(QThread):
         if len(delete_changes) == 0:
             return
 
+        # TODO: Check if it is not done
         deliveries_to_delete = self.sqlite.get_data_in("Deliveries", "farmax_id", [change[1] for change in delete_changes])
         if len(deliveries_to_delete) == 0:
             return
