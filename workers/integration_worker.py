@@ -196,14 +196,15 @@ class IntegrationWorker(QThread):
 
         # Since it can take some while to delivery be added to Velide, check if it has passed a minute or more yet.
         def isOlderThanOneMinute(saved_delivery):
-            saved_delivery_timestamp = float(saved_delivery[4])
-            return datetime.now() - datetime.fromtimestamp(saved_delivery_timestamp) > timedelta(minutes=1)
+            saved_delivery_timestamp = datetime.fromisoformat(saved_delivery[4])
+            return datetime.now() - saved_delivery_timestamp > timedelta(minutes=1)
 
         removed_deliveries = (
             saved_delivery for saved_delivery in saved_deliveries
-            if not isDeliveryInVelide(saved_delivery, velide_deliveries) and isOlderThanOneMinute(saved_delivery)
+            if not isDeliveryInVelide(saved_delivery) and isOlderThanOneMinute(saved_delivery)
         )
 
         for removed_delivery in removed_deliveries:
-            self.sqlite.delete_where("Deliveries", (("id", removed_delivery[0]),))
+            # Mark as 'done' so it is not added again later.
+            self.sqlite.update_data("Deliveries", (("done", 1),), (("id", removed_delivery[0]),))
             self.logger.info(f"Removendo entrega deletada do Velide (Venda {removed_delivery[1]}).")
