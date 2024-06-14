@@ -98,8 +98,7 @@ class IntegrationWorker(QThread):
         if len(delete_changes) == 0:
             return
 
-        # TODO: Check if it is not done
-        deliveries_to_delete = self.sqlite.get_data_in("Deliveries", "farmax_id", [change[1] for change in delete_changes])
+        deliveries_to_delete = self.sqlite.get_data_in("Deliveries", "farmax_id", [change[1] for change in delete_changes], (("done", 0),))
         if len(deliveries_to_delete) == 0:
             return
         
@@ -112,6 +111,7 @@ class IntegrationWorker(QThread):
 
             vel_delivery = await self.velide.deleteDelivery(delivery_to_delete[0])
             if not vel_delivery:
+                self.logger.error(f"Erro ao tentar remover uma entrega no Velide, após deletar uma venda no Farmax (Venda {delivery_to_delete[1]})")
                 continue
 
             self.sqlite.delete_where("Deliveries", [("id", vel_delivery["id"])])

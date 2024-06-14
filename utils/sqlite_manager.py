@@ -85,10 +85,11 @@ class SQLiteManager:
             print("Error fetching data from table:", e)
             return []
         
-    def get_data_in(self, table_name, column, inside: list):
+    def get_data_in(self, table_name, column, inside: list, additional_conditions=list()):
         try:
-            query = f"SELECT * FROM {table_name} WHERE {column} IN ({", ".join("?" * len(inside))})"
-            self.cursor.execute(query, list(inside))
+            conditions = ' AND '.join([f"{condition[0]} = ?" for condition in additional_conditions])
+            query = f"SELECT * FROM {table_name} WHERE {column} IN ({", ".join("?" * len(inside))}) {conditions}"
+            self.cursor.execute(query, list(inside) + list([condition[1] for condition in additional_conditions]))
             data = self.cursor.fetchall()
             return data
         except Exception as e:
@@ -169,8 +170,7 @@ class SQLiteManager:
             self.cursor.execute(query, list(condition[1] for condition in conditions))
             self.conn.commit()
         except Exception as e:
-            print("Error fetching data from table:", e)
-            return []
+            print("Error deleting data from table:", e)
 
     def close_connection(self):
         if self.conn:
