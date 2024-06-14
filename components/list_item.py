@@ -12,7 +12,7 @@ class ListItem(QWidget):
         label = QLabel(text)
         self.combobox = QComboBox()
         for option in options:
-            self.combobox.addItem(option[1])
+            self.combobox.addItem(f"{option[1]} ({round(option[0])})")
  
         layout.addWidget(label)
         layout.addWidget(self.combobox)
