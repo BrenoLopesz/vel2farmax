@@ -15,6 +15,7 @@ from screens.connecting_to_farmax_screen import ConnectingToFarmaxScreen
 from screens.configure_deliverymen_screen import ConfigureDeliverymenScreen
 from screens.searching_deliveries_screen import SearchingDeliveriesScreen 
 from screens.dashboard_screen import DashboardScreen 
+from screens.error_screen import ErrorScreen
 from utils.device_code import DeviceCode, DeviceCodeDict
 from utils.access_token import AccessToken, storeTokenAtFile
 from utils.logger import Logger
@@ -26,6 +27,7 @@ from workers.integration_worker import IntegrationWorker
 from workers.deliveries_tracker import DeliveriesTracker
 from workers.stored_token import StoredToken
 from workers.refresh_token import RefreshToken
+import traceback
 
 DB_NAME = "resources/vel2farmax.db"
 
@@ -50,6 +52,8 @@ database = os.getenv('DATABASE')
 user = os.getenv('USER')
 password = os.getenv('PASSWORD')
 
+error_logger = Logger("errorlog", "resources/errors.log")
+
 def loadCSS():
      # Load the CSS file
     with open(os.path.join(BUNDLE_DIR, 'resources', 'style.css'), 'r') as f:
@@ -62,6 +66,7 @@ class ModernGUI(QWidget):
         self.tasks = list()
         self.logger = Logger("log", "resources/vel2farmax.log")
         self.run_integration = False
+        self.is_on_error = False
 
         self.initUI()
 
@@ -87,6 +92,9 @@ class ModernGUI(QWidget):
         self.tray_icon.show()
 
     def closeEvent(self, event):
+        if self.is_on_error or not hasattr(self, "tray_icon"):
+            return
+
         event.ignore()
         self.hide()
         self.tray_icon.showMessage(
@@ -174,13 +182,13 @@ class ModernGUI(QWidget):
         
 
     def tryToConnectToFarmax(self):
-        # At this point, also start tray menu 
-        self.setupTrayMenu()
-
         self.connecting_to_farmax_screen = ConnectingToFarmaxScreen(self.fonts, self)
         self.connecting_to_farmax_screen.show()
 
         def onConnect(farmax_conn):
+            # At this point, also start tray menu 
+            self.setupTrayMenu()
+
             self.farmax_conn = farmax_conn
             self.logger.info("Conectado com o Farmax.")
             self.connecting_to_farmax_screen.setConnected()
@@ -269,9 +277,16 @@ class ModernGUI(QWidget):
         if not self.run_integration:
             return
         
+        def displayError(e):
+            error_message = ''.join(traceback.format_exception(None, e, e.__traceback__))
+            error_logger.critical(error_message)
+            self.dashboard_screen.close()
+            self.showErrorScreen()
+        
         self.integration_worker = IntegrationWorker(self.farmax_conn, self.velide, self.logger)
         # Restart only after finishing
         self.integration_worker.end.connect(lambda: QTimer.singleShot(4500, self.updateTracker))
+        self.integration_worker.error.connect(displayError)
         self.integration_worker.start()
 
     def updateTracker(self):
@@ -279,10 +294,30 @@ class ModernGUI(QWidget):
         if not self.run_integration:
             return
         
+        def displayError(e):
+            error_message = ''.join(traceback.format_exception(None, e, e.__traceback__))
+            error_logger.critical(error_message)
+            self.dashboard_screen.close()
+            self.showErrorScreen()
+        
         self.deliveries_tracker = DeliveriesTracker(self.velide)
         self.deliveries_tracker.on_update.connect(lambda data_list: self.dashboard_screen.updateTracker([(f"{data[0]}", data[1], "Sim" if data[2] is not None else "Não", data[2]) for data in data_list]))
         self.deliveries_tracker.end.connect(lambda: QTimer.singleShot(500, self.pullDeliveries))
+        self.deliveries_tracker.error.connect(displayError)
         self.deliveries_tracker.start()
+
+    def showErrorScreen(self):
+        self.is_on_error = True
+        self.tray_icon.showMessage(
+            "Vel2Farmax",
+            "Ocorreu um erro! A integração será reiniciada em breve...",
+            QSystemTrayIcon.Critical,
+            5000
+        )
+
+        self.error_screen = ErrorScreen(self.fonts, self)
+        self.error_screen.show()
+        self.run_integration = False
 
 if __name__ == '__main__':
     try:
@@ -292,5 +327,5 @@ if __name__ == '__main__':
         window.show()
         sys.exit(app.exec_())
     except Exception as e:
-        errorLogger = Logger("errorlog", "resources/errors.log")
-        errorLogger.critical(e)
+        error_logger.critical(e)
+        raise
