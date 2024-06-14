@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 from utils.device_code import DeviceCode, DeviceCodeDict
 from utils.sqlite_manager import SQLiteManager
 from utils.velide import Velide
+from utils.logger import Logger
 from datetime import datetime, timedelta
 import asyncio
 import sys
@@ -18,19 +19,23 @@ DB_NAME = os.path.join(BUNDLE_DIR, "resources", "vel2farmax.db")
 class DeliveriesTracker(QThread):
     on_update = pyqtSignal(list)
     end = pyqtSignal()
+    error = pyqtSignal(Exception)
 
     def __init__(self, velide: Velide):
         super().__init__()
         self.velide = velide
         
     def run(self):
-        self.sqlite = SQLiteManager(DB_NAME)
-        self.sqlite.connect()
+        try:
+            self.sqlite = SQLiteManager(DB_NAME)
+            self.sqlite.connect()
 
-        deliverymen = self.sqlite.get_data("Deliverymen")
-        deliveries = self.sqlite.get_data_where_multi("Deliveries", (("done", 0),))
+            deliverymen = self.sqlite.get_data("Deliverymen")
+            deliveries = self.sqlite.get_data_where_multi("Deliveries", (("done", 0),))
 
-        asyncio.run(self.runTracker(deliveries, deliverymen))
+            asyncio.run(self.runTracker(deliveries, deliverymen))
+        except Exception as e:
+            self.error.emit(e)
 
     async def runTracker(self, deliveries, deliverymen):
         current_date = datetime.now()

@@ -17,6 +17,7 @@ DB_NAME = os.path.join(BUNDLE_DIR, "resources", "vel2farmax.db")
 
 class IntegrationWorker(QThread):
     end = pyqtSignal()
+    error = pyqtSignal(Exception)
 
     def __init__(self, farmax_conn: Farmax, velide: Velide, logger: Logger):
         super().__init__()
@@ -25,30 +26,48 @@ class IntegrationWorker(QThread):
         self.logger = logger
 
     def run(self):
-        self.sqlite = SQLiteManager(DB_NAME)
-        self.sqlite.connect()
+        try:
+            self.sqlite = SQLiteManager(DB_NAME)
+            self.sqlite.connect()
 
-        latest_sale = self.sqlite.getLatestSale()
-        latest_sale_created_at = None if latest_sale is None else datetime.fromisoformat(latest_sale[4])
+            latest_sale = self.sqlite.getLatestSale()
+            latest_sale_created_at = None if latest_sale is None else datetime.fromisoformat(latest_sale[4])
 
-        current_date = datetime.now()
-        # Set the time to midnight (00:00:00)
-        start_of_day = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            current_date = datetime.now()
+            # Set the time to midnight (00:00:00)
+            start_of_day = current_date.replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            search_after_time = start_of_day if latest_sale is None or latest_sale_created_at < start_of_day else latest_sale_created_at
+
+            changes = self.farmax_conn.fetchChangesAfterTime(search_after_time)
+
+            asyncio.run(self.runHandlers(changes))
+
+            self.sqlite.close_connection()
+            self.sqlite = None
+            self.end.emit()
+        except Exception as e:
+            self.error.emit(e)
+
+    async def fetchDeliveries(self, day_before, current_date):
+        fetch_attempt = 0
+        max_attempts = 4
         
-        search_after_time = start_of_day if latest_sale is None or latest_sale_created_at < start_of_day else latest_sale_created_at
-
-        changes = self.farmax_conn.fetchChangesAfterTime(search_after_time)
-
-        asyncio.run(self.runHandlers(changes))
-
-        self.sqlite.close_connection()
-        self.sqlite = None
-        self.end.emit()
+        while fetch_attempt < max_attempts:
+            try:
+                return await self.velide.getDeliveries(day_before.timestamp(), current_date.timestamp())
+            except Exception as e:
+                fetch_attempt += 1
+                if fetch_attempt >= max_attempts:
+                    self.logger.error("Conexão perdida com o Velide (tentativas excedidas).")
+                    raise e
+                self.logger.error(f"Falha ao conectar com o Velide, tentando novamente... (Tentativa {fetch_attempt})")
 
     async def runHandlers(self, changes):
         current_date = datetime.now()
         day_before = current_date - timedelta(hours=24)
-        velide_deliveries = await self.velide.getDeliveries(day_before.timestamp(), current_date.timestamp())
+        
+        velide_deliveries = await self.fetchDeliveries(day_before, current_date)
         
         await self.handleInsertChanges(changes)
         await self.handleDeleteChanges(changes)

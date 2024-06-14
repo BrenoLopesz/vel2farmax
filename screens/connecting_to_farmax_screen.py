@@ -32,6 +32,8 @@ class ConnectingToFarmaxScreen:
     def setError(self):
         self.connecting_farmax_label.setText("Falha ao conectar com Farmax.")
         self.connecting_farmax_label.setObjectName("error")
+        self.connecting_farmax_label.update()
+        self.connecting_farmax_label.show()
 
     def setConnected(self):
         self.connecting_farmax_label.setText("Conectado com Farmax.")

@@ -15,17 +15,14 @@ class Farmax:
         self.ADD_DELIVERY_TRIGGER_NAME = "TRG_ADD_DELIVERY"
 
     def connect(self):
-        try:
-            # Connect to the Firebird database
-            self.farmax_conn = fdb.connect(
-                dsn=self.host + ':' + self.database,
-                user=self.user,
-                password=self.password
-            )
+        # Connect to the Firebird database
+        self.farmax_conn = fdb.connect(
+            dsn=self.host + ':' + self.database,
+            user=self.user,
+            password=self.password
+        )
 
-            self.initialSetup()
-        except Exception as e:
-            print("Error connecting to database:", e)
+        self.initialSetup()
 
     def initialSetup(self):
         """
