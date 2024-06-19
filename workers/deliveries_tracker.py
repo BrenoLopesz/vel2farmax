@@ -45,11 +45,21 @@ class DeliveriesTracker(QThread):
         print(velide_deliveries)
         print(deliveries)
 
+        # Get keys and sub-keys of a dictionary, or return a default if it does not have value.
+        def safe_get(d, keys, default=None):
+            for key in keys:
+                if isinstance(d, dict):
+                    d = d.get(key, default)
+                else:
+                    return default
+            return d
+
         self.on_update.emit(
             [
                 (
                     delivery[1], 
-                    next((velide_delivery["location"]["properties"]["name"] for velide_delivery in velide_deliveries if velide_delivery["id"] == delivery[0]), None), 
+                    # Sometimes delivery hasn't a location, switch to a temporary name.
+                    next((safe_get(velide_delivery, ["location", "properties", "name"], "Endereço Inválido") for velide_delivery in velide_deliveries if velide_delivery["id"] == delivery[0]), None), 
                     next((deliveryman[2] for deliveryman in deliverymen if deliveryman[0] == delivery[2]), None)
                 )
                 for delivery in deliveries

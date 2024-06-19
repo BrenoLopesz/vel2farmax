@@ -25,7 +25,7 @@ exe_debug = Executable(
 
 setup(
     name="Vel2Farmax",
-    version="1.0",
+    version="1.2",
     description="Middleware para conectar o Farmax com o Velide.",
     executables=[exe, main, exe_debug],
     options={

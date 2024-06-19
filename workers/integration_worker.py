@@ -91,7 +91,7 @@ class IntegrationWorker(QThread):
         for sale_info in sales_info_to_insert:
             vel_delivery = await self.velide.addDelivery(sale_info)
             self.sqlite.insert_data("Deliveries", (vel_delivery["id"], sale_info["cd_venda"], None, 0, datetime.now().isoformat()))
-            self.logger.info(f"Nova entrega adicionada ao Velide: {vel_delivery["location"]["properties"]["name"] if vel_delivery["location"]["properties"]["name"] is not None else "Endereço Indefinido"}")
+            self.logger.info(f"Nova entrega adicionada ao Velide: {self.safe_get(vel_delivery, ["location", "properties", "name"], "Endereço Inválido")}")
     
     async def handleDeleteChanges(self, changes):
         delete_changes = tuple(change for change in changes if change[2] == "DELETE")
@@ -115,7 +115,7 @@ class IntegrationWorker(QThread):
                 continue
 
             self.sqlite.delete_where("Deliveries", [("id", vel_delivery["id"])])
-            self.logger.info(f"Entrega deletada: {vel_delivery["location"]["properties"]["name"] if vel_delivery["location"]["properties"]["name"] is not None else "Endereço Indefinido"}")
+            self.logger.info(f"Entrega deletada: {self.safe_get(vel_delivery, ["location", "properties", "name"], "Endereço Inválido")}")
 
     async def handleRouteStarts(self, velide_deliveries):
         deliveries_in_route = [delivery for delivery in velide_deliveries 
@@ -155,7 +155,7 @@ class IntegrationWorker(QThread):
                             new_deliverymen_in_route[i] = (name, (*velide_deliveries, delivery_from_velide))
         
         for deliveryman in new_deliverymen_in_route:
-            deliveries_names = [delivery["location"]["properties"]["name"] if delivery["location"]["properties"]["name"] is not None else "Endereço Indefinido" for delivery in deliveryman[1]]
+            deliveries_names = [self.safe_get(delivery, ["location", "properties", "name"], "Endereço Inválido") for delivery in deliveryman[1]]
             self.logger.info(f"Rota iniciada para {deliveryman[0]} contendo as entregas: {", ".join(deliveries_names)}")
 
     async def handleRouteEnds(self, velide_deliveries):
@@ -208,3 +208,12 @@ class IntegrationWorker(QThread):
             # Mark as 'done' so it is not added again later.
             self.sqlite.update_data("Deliveries", (("done", 1),), (("id", removed_delivery[0]),))
             self.logger.info(f"Removendo entrega deletada do Velide (Venda {removed_delivery[1]}).")
+
+    # Get keys and sub-keys of a dictionary, or return a default if it does not have value.
+    def safe_get(self, d, keys, default=None):
+        for key in keys:
+            if isinstance(d, dict):
+                d = d.get(key, default)
+            else:
+                return default
+        return d
