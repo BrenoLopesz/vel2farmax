@@ -124,10 +124,18 @@ class Velide():
         if response.status_code != 200:
             raise Exception(f"GraphQL mutation failed with status code {response.status_code}: {response.text}")
         
-        print(response.json())
+        try:
+            response_json = response.json()
+        except: 
+            raise Exception(f"Could not parse response as JSON.", response)
+        
+        print(response_json)
+
+        if response_json is None or "data" not in response_json or "addDeliveryFromIntegration" not in response_json["data"]:
+            raise Exception(f"Unexpected response structure: {response_json}")
 
         # Parsing and returning the JSON response
-        return response.json()["data"]["addDeliveryFromIntegration"]
+        return response_json["data"]["addDeliveryFromIntegration"]
     
     async def deleteDelivery(self, id):
 

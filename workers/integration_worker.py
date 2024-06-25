@@ -18,6 +18,7 @@ DB_NAME = os.path.join(BUNDLE_DIR, "resources", "vel2farmax.db")
 class IntegrationWorker(QThread):
     end = pyqtSignal()
     error = pyqtSignal(Exception)
+    debug = pyqtSignal(str)
 
     def __init__(self, farmax_conn: Farmax, velide: Velide, logger: Logger):
         super().__init__()
@@ -63,6 +64,21 @@ class IntegrationWorker(QThread):
                     raise e
                 self.logger.error(f"Falha ao conectar com o Velide, tentando novamente... (Tentativa {fetch_attempt})")
 
+    async def addDelivery(self, sale_info):
+        fetch_attempt = 0
+        max_attempts = 3
+        
+        while fetch_attempt < max_attempts:
+            try:
+                return await self.velide.addDelivery(sale_info)
+            except Exception as e:
+                fetch_attempt += 1
+                if fetch_attempt >= max_attempts:
+                    self.logger.error("Conexão perdida com o Velide (tentativas excedidas).")
+                    raise e
+                self.logger.error(f"Falha ao adicionar entregas no Velide, tentando novamente... (Tentativa {fetch_attempt})")
+                self.debug.emit(f"Falha ao adicionar entrega: {e} \nDados da entrega: {sale_info}")
+
     async def runHandlers(self, changes):
         current_date = datetime.now()
         day_before = current_date - timedelta(hours=24)
@@ -89,7 +105,7 @@ class IntegrationWorker(QThread):
 
         # Add deliveries to velide
         for sale_info in sales_info_to_insert:
-            vel_delivery = await self.velide.addDelivery(sale_info)
+            vel_delivery = await self.addDelivery(sale_info)
             self.sqlite.insert_data("Deliveries", (vel_delivery["id"], sale_info["cd_venda"], None, 0, datetime.now().isoformat()))
             self.logger.info(f"Nova entrega adicionada ao Velide: {self.safe_get(vel_delivery, ["location", "properties", "name"], "Endereço Inválido")}")
     

@@ -53,6 +53,7 @@ user = os.getenv('USER')
 password = os.getenv('PASSWORD')
 
 error_logger = Logger("errorlog", "resources/errors.log")
+debug_logger = Logger("debuglog", "resources/debug.log")
 
 def loadCSS():
      # Load the CSS file
@@ -287,6 +288,7 @@ class ModernGUI(QWidget):
         # Restart only after finishing
         self.integration_worker.end.connect(lambda: QTimer.singleShot(4500, self.updateTracker))
         self.integration_worker.error.connect(displayError)
+        self.integration_worker.debug.connect(debug_logger.debug)
         self.integration_worker.start()
 
     def updateTracker(self):
