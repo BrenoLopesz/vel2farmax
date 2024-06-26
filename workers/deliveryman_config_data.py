@@ -1,8 +1,10 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from utils.velide import Velide
 import asyncio
+import os
 
-VELIDE_SERVER="https://srv436689.hstgr.cloud/"
+# VELIDE_SERVER="https://srv436689.hstgr.cloud/"
+VELIDE_SERVER=os.getenv('VELIDE_SERVER')
 
 class DeliverymanConfigData(QThread):
     data = pyqtSignal(list, list, Velide)

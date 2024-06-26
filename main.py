@@ -38,7 +38,8 @@ CLIENT_ID = "S89fszfvMnU3WrVulijNCO7FokD1Lktz"
 SCOPE =  "offline_access openid email profile"
 AUDIENCE = "https://velide.com.br/"
 
-VELIDE_SERVER="https://srv436689.hstgr.cloud/"
+# VELIDE_SERVER="https://srv436689.hstgr.cloud/"
+VELIDE_SERVER=os.getenv('VELIDE_SERVER')
 
 if getattr(sys, 'frozen', False):
     BUNDLE_DIR = os.path.dirname(sys.executable)
