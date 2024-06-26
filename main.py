@@ -29,6 +29,8 @@ from workers.stored_token import StoredToken
 from workers.refresh_token import RefreshToken
 import traceback
 
+load_dotenv(os.path.join("resources", ".env"))
+
 DB_NAME = "resources/vel2farmax.db"
 
 WINDOW_SIZE = [600, 600]
@@ -46,7 +48,6 @@ if getattr(sys, 'frozen', False):
 else:
     BUNDLE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-load_dotenv(os.path.join("resources", ".env"))
 
 host = os.getenv('HOST')
 database = os.getenv('DATABASE')

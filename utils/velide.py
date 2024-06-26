@@ -1,3 +1,4 @@
+from datetime import datetime
 import requests
 import httpx
 
@@ -78,11 +79,12 @@ class Velide():
 
         # GraphQL mutation with variables
         mutation = """
-            mutation AddDeliveryFromIntegration($metadata: MetadataInput!, $address: String, $reference: String) {
+            mutation AddDeliveryFromIntegration($metadata: MetadataInput!, $address: String, $reference: String, $offset: Int) {
                 addDeliveryFromIntegration(
                     metadata: $metadata
                     address: $address
                     reference: $reference
+                    offset: $offset
                 ) {
                     id
                     routeId
@@ -100,6 +102,18 @@ class Velide():
             }
         """
 
+        today_date = datetime.now().date()
+        # sale_info["created_at"] is a datetime.time object
+        # We have to combine it to today's date
+        datetime_combined = datetime.combine(today_date, sale_info["created_at"])
+
+        # Offset should be an integer
+        unix_timestamp = int(datetime_combined.timestamp())
+        now = int(datetime.now().timestamp()) 
+        offset_in_seconds = now - unix_timestamp
+        # Offset should be in milliseconds
+        offset = offset_in_seconds * 1000
+
         # GraphQL request payload
         payload = {
             'query': mutation,
@@ -110,7 +124,9 @@ class Velide():
                     # 'contact': sale_info["contact"] TODO
                  },
                 'address': sale_info["address"],
-                'reference': sale_info["reference"]
+                'reference': sale_info["reference"],
+                # To avoid unneccessary offsets, only set it if is bigger than a minute ago
+                'offset': offset if offset > 60000 else 0
             }
         }
 
