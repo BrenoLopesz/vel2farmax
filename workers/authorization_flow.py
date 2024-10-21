@@ -3,13 +3,12 @@ from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 from utils.device_code import DeviceCode, DeviceCodeDict
 from utils.access_token import AccessToken
 import time
-import base64
-import json
+import os
 
-DOMAIN = "dev-b6bioprv4weafg2d.us.auth0.com"
-CLIENT_ID = "S89fszfvMnU3WrVulijNCO7FokD1Lktz"
-SCOPE =  "offline_access openid email profile"
-AUDIENCE = "https://velide.com.br/"
+DOMAIN = os.getenv('DOMAIN')
+CLIENT_ID = os.getenv('CLIENT_ID')
+SCOPE = os.getenv('SCOPE')
+AUDIENCE = os.getenv('AUDIENCE')
 
 class AuthorizationFlow(QThread):
     signal = pyqtSignal(str)

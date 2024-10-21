@@ -35,13 +35,10 @@ DB_NAME = "resources/vel2farmax.db"
 
 WINDOW_SIZE = [600, 600]
 # TODO: Fetch this from Velide (can it change?)
-DOMAIN = "dev-b6bioprv4weafg2d.us.auth0.com"
-CLIENT_ID = "S89fszfvMnU3WrVulijNCO7FokD1Lktz"
-SCOPE =  "offline_access openid email profile"
-AUDIENCE = "https://velide.com.br/"
-
-# VELIDE_SERVER="https://srv436689.hstgr.cloud/"
-VELIDE_SERVER=os.getenv('VELIDE_SERVER')
+DOMAIN = os.getenv("DOMAIN")
+CLIENT_ID = os.getenv("CLIENT_ID")
+SCOPE =  os.getenv("SCOPE")
+AUDIENCE = os.getenv("AUDIENCE")
 
 if getattr(sys, 'frozen', False):
     BUNDLE_DIR = os.path.dirname(sys.executable)
