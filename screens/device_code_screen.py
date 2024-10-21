@@ -60,7 +60,7 @@ class DeviceCodeScreen:
         self.code_display.move(0, 442)
         self.code_display.show()
 
-        self.login_link = QLabel('<a href=\"{}\" style=\"color: #0EA5E9\">Acessar Link</a>'.format(device_code["verification_uri_complete"]), self.parent)
+        self.login_link = QLabel('<a href=\"{}\" style=\"color: #0EA5E9\">{}</a>'.format(device_code["verification_uri_complete"], device_code["verification_uri"]), self.parent)
         self.login_link.setTextFormat(Qt.RichText) 
         self.login_link.setObjectName("link")
         self.login_link.setFont(self.fonts["bold"])
