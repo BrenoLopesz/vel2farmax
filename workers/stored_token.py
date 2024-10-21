@@ -5,6 +5,7 @@ from datetime import datetime
 import time
 import sys
 import os
+import jwt
 
 if getattr(sys, 'frozen', False):
     BUNDLE_DIR = os.path.dirname(sys.executable)
@@ -27,8 +28,11 @@ class StoredToken(QThread):
             if(jsonStoredAccess is None or jsonStoredAccess["access_token"] is None):
                 return 
             
-            print(jsonStoredAccess["expires_at"], time.time(), time.time() > jsonStoredAccess["expires_at"])
-            if "expires_at" in jsonStoredAccess and time.time() > jsonStoredAccess["expires_at"]:
+            accessTokenDecoded = jwt.decode(jsonStoredAccess["access_token"], options={ "verify_signature": False})
+            print("Decoded access token: {}".format(accessTokenDecoded))
+            
+            print(accessTokenDecoded["exp"], time.time(), time.time() > accessTokenDecoded["exp"])
+            if not "exp" in accessTokenDecoded or time.time() > accessTokenDecoded["exp"]:
                 print("Expired token.")
                 # TODO: Refresh token
                 self.expired.emit(jsonStoredAccess["refresh_token"])

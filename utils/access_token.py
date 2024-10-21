@@ -43,21 +43,9 @@ class AccessToken():
     def storeAtFile(self):
         token = json.loads(self.response.text)
         storeTokenAtFile(token)
-
-    def readStoredAccess(self): 
-        try: 
-            f = open(os.path.join(BUNDLE_DIR, "resources", "json.txt"), "r")
-            storedAccess = base64.b64decode(f.read()).decode('utf-8')
-            jsonStoredAccess = json.loads(storedAccess)
-            if(jsonStoredAccess is None or jsonStoredAccess["access_token"] is None):
-                return None
-            
-            return jsonStoredAccess
-        except: 
-            return None
         
 def storeTokenAtFile(token: dict):
-    token["expires_at"] = time.time() + token["expires_in"] - 60 # Safe margin
+    # token["expires_at"] = time.time() + token["expires_in"] - 60 # Safe margin
     encoded_json = encode_base64(json.dumps(token))
     # Save the encoded refresh token to a file
     file_dir = os.path.dirname(os.path.join(BUNDLE_DIR, "resources", "json.txt"))
