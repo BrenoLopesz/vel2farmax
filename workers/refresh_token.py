@@ -31,8 +31,10 @@ class RefreshToken(QThread):
                 raise Exception(f"Failed to refresh token with status code {response.status_code}: {response.text}")
             
             jsonResponse = json.loads(response.text)
+
+            jsonResponse["refresh_token"] = self.data["refresh_token"]
             print("Refreshed token: ", jsonResponse)
             self.token.emit(jsonResponse)
         except Exception as e:
-            self.error.emit(e)
             print(e)
+            self.error.emit(e)
