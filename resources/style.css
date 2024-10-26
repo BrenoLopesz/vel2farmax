@@ -42,3 +42,8 @@ QLabel#codeDisplay {
     font-size: 24px;
     font-weight: bold;
 }
+QLabel#title {
+    color: #1e293b;
+    font-size: 24px;
+    font-weight: bold;
+}

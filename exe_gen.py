@@ -16,6 +16,13 @@ main = Executable(
     icon="velide.ico",
     target_name="main.exe"
 )
+update_installer = Executable(
+    script="update_installer.py",
+    # base=None,
+    base="Win32GUI",
+    icon="velide.ico",
+    target_name="update.exe"
+)
 exe_debug = Executable(
     script="run_app.py",
     base=None,
@@ -32,5 +39,19 @@ setup(
         "build_exe": {
             "packages":["fdb"],
         }
+    }
+)
+
+setup(
+    name="Vel2Farmax Installer",
+    version="1.0",
+    description="Instalador de atualizações do Vel2Farmax.",
+    executables=[update_installer],
+    options={
+        "build_exe": {
+            "packages":["fdb"],
+            "build_exe": "installer"
+        },
+        
     }
 )
