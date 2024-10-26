@@ -89,7 +89,6 @@ class Velide():
                     id
                     routeId
                     endedAt
-                    expectedEnd
                     createdAt
                     location {
                         properties {
