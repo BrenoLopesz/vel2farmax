@@ -32,7 +32,7 @@ class AccessToken():
         }
 
     def request(self):
-        self.response = requests.post(self.url, headers=self.headers, data=self.data)
+        self.response = requests.post(self.url, headers=self.headers, data=self.data, verify=False)
 
     def getStatusCode(self):
         return self.response.status_code

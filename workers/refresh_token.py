@@ -25,7 +25,7 @@ class RefreshToken(QThread):
 
     def run(self):
         try:
-            response = requests.post(self.url, headers=self.headers, data=self.data)
+            response = requests.post(self.url, headers=self.headers, data=self.data, verify=False)
 
             if response.status_code != 200:
                 raise Exception(f"Failed to refresh token with status code {response.status_code}: {response.text}")
