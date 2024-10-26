@@ -1,7 +1,17 @@
 from PyQt5.QtCore import QThread, pyqtSignal
 from utils.velide import Velide
 import asyncio
+from dotenv import load_dotenv
 import os
+import sys
+
+if getattr(sys, 'frozen', False):
+    BUNDLE_DIR = os.path.dirname(sys.executable)
+else:
+    BUNDLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+
+# Load environment variables from .env file
+load_dotenv(os.path.join(BUNDLE_DIR, "resources", ".env"))
 
 # VELIDE_SERVER="https://srv436689.hstgr.cloud/"
 VELIDE_SERVER=os.getenv('VELIDE_SERVER')

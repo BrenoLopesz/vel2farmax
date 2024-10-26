@@ -1,9 +1,9 @@
 import requests
 import json
 import base64
-import time
 import sys
 import os
+from dotenv import load_dotenv
 
 if getattr(sys, 'frozen', False):
     BUNDLE_DIR = os.path.dirname(sys.executable)

@@ -2,8 +2,18 @@ from PyQt5.QtCore import QObject, QThread, pyqtSignal, Qt
 from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget
 from utils.device_code import DeviceCode, DeviceCodeDict
 from utils.access_token import AccessToken
+from dotenv import load_dotenv
 import time
 import os
+import sys
+
+if getattr(sys, 'frozen', False):
+    BUNDLE_DIR = os.path.dirname(sys.executable)
+else:
+    BUNDLE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
+
+# Load environment variables from .env file
+load_dotenv(os.path.join(BUNDLE_DIR, "resources", ".env"))
 
 DOMAIN = os.getenv('DOMAIN')
 CLIENT_ID = os.getenv('CLIENT_ID')
